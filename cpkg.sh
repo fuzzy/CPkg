@@ -43,7 +43,7 @@ declare -A CPKG
 CPKG[VERBOSE]=1
 
 # Our base directory from wich all others spring
-CPKG[BASE_DIR]=${HOME}/.spm
+CPKG[BASE_DIR]=${HOME}/.cpkg
 
 # Configurations
 CPKG[CONF_DIR]=${CPKG[BASE_DIR]}/conf.d
