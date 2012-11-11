@@ -22,7 +22,7 @@ cpkg() {
     list)
       echo "Listing packages:"
       for itm in $(ls ${CPKG[PKG_DIR]}/|grep "${CPKG[OS_STAMP]}${2}"); do
-     		echo "[$(cpkg_belongs_to ${itm})] $(echo ${itm}|awk -F`uname -m`-- '{print $2}')"
+     		echo -e "[$(cpkg_belongs_to ${itm})] $(echo ${itm}|awk -F`uname -m`-- '{print $2}')"
       done
  	    ;;
     use)
@@ -81,15 +81,17 @@ cpkg() {
       log_info "Rebuilding session paths: "
       tmp=$(mktemp /tmp/cpkg.${RND})
       cp ${CPKG[SESSION]}/.packages ${tmp}
-      $(which rm) -rf ${CPKG[SESSION]}
+	  mv ${CPKG[SESSION]} ${CPKG[SESSION]}.old
       mkdir -p ${CPKG[SESSION]}
       cp ${tmp} ${CPKG[SESSION]}/.packages
       cat ${CPKG[GLOBAL]}/.packages ${CPKG[SESSION]}/.packages > ${tmp}
       for itm in $(cat ${tmp}); do
-        slndir ${CPKG[PKG_DIR]}/${itm}/ ${CPKG[SESSION]}/
+        ${CPKG[LNDIR]} ${CPKG[PKG_DIR]}/${itm}/ ${CPKG[SESSION]}/ $(echo ${itm}|sed -e "s/${CPKG[OS_STAMP]}//g") >/dev/null
       done
       rm -f ${tmp} ; unset tmp
       cpkg renv
+	  log_info "Cleaning up"
+	  $(which rm) -rf ${CPKG[SESSION]}.old
       ;;
     renv)
       log_info "Rebuilding user environment: "

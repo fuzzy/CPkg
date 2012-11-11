@@ -37,10 +37,13 @@ if [ ! -z "${CPKG}" ]; then
 fi
 
 # And kick it off
-declare -A CPKG
+case "$(basename ${SHELL})" in
+	zsh) declare -A CPKG ;;
+	bash) declare -A CPKG ;;
+esac
 
 # Be verbose
-CPKG[VERBOSE]=1
+export CPKG_VERBOSE=1
 
 # Our base directory from wich all others spring
 CPKG[BASE_DIR]=${HOME}/.cpkg
@@ -72,6 +75,12 @@ CPKG[PKGSCRIPT]=${CPKG[BASE_DIR]}/pkgs.d
 # Our environment files
 CPKG[ENV_DIR]=${CPKG[BASE_DIR]}/env.d
 
+# Our utility source dir
+CPKG[UTIL_SRC]=${CPKG[BASE_DIR]}/utils.s
+
+# Our utility bin dir
+CPKG[UTIL_BIN]=${CPKG[BASE_DIR]}/utils
+
 # Lets ensure all our directories exist
 TMP=$(mktemp /tmp/cpkg.${RND})
 case "${CPKG_SHELL}" in
@@ -93,17 +102,13 @@ for key in ${KEYS}; do
 done
 
 unset KEYS
-
+ 
 if [ ! -f ${CPKG[GLOBAL]}/.packages ]; then
     touch ${CPKG[GLOBAL]}/.packages
 fi
 
 CPKG[SHPID]=${CPKG_SH_PID}
 CPKG[SHELL]=${CPKG_SHELL}
-
-# Our verbosity level
-# Set this to 1 to see log msgs on the console
-CPKG[VERBOSE]=0
 
 # Our toolchain needs setup, so lets do that now
 # Lets get our fetching utility
@@ -173,6 +178,23 @@ CPKG[LOGFILE]=${CPKG[LOG_DIR]}/${CPKG[HASH]}.log
 if [ ! -e ${CPKG[LOGFILE]} ]; then
   touch ${CPKG[LOGFILE]}
 fi
+
+# Now lets make sure our utilities are there, and if not, compile them.
+if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
+	if [ ! -e ${CPKG[UTIL_SRC]}/lndir.c ]; then
+		log_error "No lndir.c available, and no lndir. Falling back to the *VERY* slow shell version."
+		CPKG[LNDIR]=slndir
+	else
+		log_info "Compiling lndir.c"
+		${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/lndir ${CPKG[UTIL_SRC]}/lndir.c
+		CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir
+	fi
+else
+	CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir
+fi
+
+# Ensure this is globally available
+export CPKG
 
 # Now that setup is complete, lets source in the actual code
 # Our logging routines

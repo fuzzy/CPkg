@@ -2,31 +2,31 @@ logfile_msg() {
   echo "[$(date) ${1}]: ${2}" >> ${CPKG[LOGFILE]}
 }
 
-logoutput_msg() {
-  echo -e "[${1}]: ${2}"
-}
-
 log_info() {
   logfile_msg 'INFO' ${*}
-  logoutput_msg '\033[1;32m++\033[0;0m' ${*}
+  if [ "${CPKG_VERBOSE}" = "1" ]; then
+    echo -e "\033[1;32m+++\033[0;0m ${*}"
+  fi
 }
 
 log_warn() {
   logfile_msg 'WARN' ${*}
-  logoutput_msg '\033[0;33m**\033[0;0m' ${*}
+  echo -e "\033[0;33m***\033[0;0m ${*}"
 }
 
 log_error() {
   logfile_msg 'ERROR' ${*}
-  logoutput_msg '\033[0;31m!!\033[0;0m' ${*}
+  echo -e "\033[0;31m!!!\033[0;0m ${*}"
 }
 
 log_fatal() {
-  logfile_msg 'FATAL' ${*}
-  logoutput_msg '\033[1;31m!!\033[0;0m' ${*}
+  logfile_msg 'FATAL' "${*}"
+  echo -e "\033[1;31m!!!\033[0;0m ${*}"
 }
 
 log_debug() {
-  logfile_msg 'DEBUG' ${*}
-  logoutput_msg '\033[0;36m%%\033[0;0m' ${*}
+  logfile_msg 'DEBUG' "${*}"
+  if [ "${CPKG_DEBUG}" = "1" ]; then
+    echo -e "\033[0;36m%%%\033[0;0m ${*}"
+  fi
 }
