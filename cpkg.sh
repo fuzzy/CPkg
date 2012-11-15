@@ -199,7 +199,7 @@ fi
 . ${CPKG[LIB_DIR]}/utils.sh
 
 # And our package building / installation functions
-#. ${CPKG[LIB_DIR]}/build.sh
+. ${CPKG[LIB_DIR]}/build.sh
 
 # Now lets make sure our utilities are there, and if not, compile them.
 if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
