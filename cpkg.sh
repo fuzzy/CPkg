@@ -69,6 +69,9 @@ CPKG[TMP_DIR]=${CPKG[BASE_DIR]}/tmp
 # Our installed packages
 CPKG[PKG_DIR]=${CPKG[BASE_DIR]}/packages
 
+# Our freezer
+CPKG[FREEZER]=${CPKG[BASE_DIR]}/freezer
+
 # Our pkgbuild files
 CPKG[PKGSCRIPT]=${CPKG[BASE_DIR]}/pkgs.d
 
@@ -179,6 +182,25 @@ if [ ! -e ${CPKG[LOGFILE]} ]; then
   touch ${CPKG[LOGFILE]}
 fi
 
+# Now that setup is complete, lets source in the actual code
+# Our logging routines
+. ${CPKG[LIB_DIR]}/logging.sh
+
+# Our main logic
+. ${CPKG[LIB_DIR]}/cpkg.sh
+
+# Our core slndir function
+. ${CPKG[LIB_DIR]}/lndir.sh
+
+# Our interface routines
+. ${CPKG[LIB_DIR]}/ui.sh
+
+# And our utility functions
+. ${CPKG[LIB_DIR]}/utils.sh
+
+# And our package building / installation functions
+#. ${CPKG[LIB_DIR]}/build.sh
+
 # Now lets make sure our utilities are there, and if not, compile them.
 if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
 	if [ ! -e ${CPKG[UTIL_SRC]}/lndir.c ]; then
@@ -196,21 +218,5 @@ fi
 # Ensure this is globally available
 export CPKG
 
-# Now that setup is complete, lets source in the actual code
-# Our logging routines
-. ${CPKG[LIB_DIR]}/logging.sh
-
-# Our main logic
-. ${CPKG[LIB_DIR]}/cpkg.sh
-
-# Our core slndir function
-. ${CPKG[LIB_DIR]}/lndir.sh
-
-# Our interface routines
-. ${CPKG[LIB_DIR]}/ui.sh
-
-# And our utility functions
-. ${CPKG[LIB_DIR]}/utils.sh
-
+# and build our paths
 cpkg recycle
-log_info "Initialization complete."

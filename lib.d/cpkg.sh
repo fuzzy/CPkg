@@ -6,17 +6,16 @@ cpkg() {
       echo "cpkg <command> <...>"
       echo
       echo "Commands:"
-      echo "  list [pkg]                             List packages or versions of [pkg]"
-      echo "  use [global|(session)] <pkg>-<ver>     Use <pkg>-<ver>"
-      echo "  drop [global|(session)] <pkg>-<ver>    Stop using <pkg>-<ver>"
-      echo "  log                                    Shows the logfile for your session."
-      echo "  recycle                                Regenerate the session paths."
-      echo "  renv                                   Rebuild environment variables."
-      echo
-      echo "In progress:"
-      echo "  search <pkg>                           Search build files and packages"
-      echo "  install [binary|(build)] <pkg>         Install <pkg>"
-      echo "  remove <pkg>                           Remove <pkg>"
+      echo "  list|l [pkg]                           List packages or versions of [pkg]"
+      echo "  use [global|(session)] <pkg>-<ver>   Use <pkg>-<ver>"
+      echo "  drop [global|(session)] <pkg>-<ver>  Stop using <pkg>-<ver>"
+      echo "  log                                  Shows the logfile for your session."
+      echo "  recycle                              Regenerate the session paths."
+      echo "  renv                                 Rebuild environment variables."
+	  echo "  freeze [pkg]                         Freeze a package at a given state."
+	  echo "  freezer <pkg>                        Show the contents of the freezer, or filtered by <pkg>."
+  	  echo "  unfreeze [pkg]                       Unfreeze a package from a given state."
+      echo "  remove [pkg]                         Remove <pkg>"
       echo
       ;;
     list)
@@ -26,49 +25,54 @@ cpkg() {
       done
  	    ;;
     use)
-      if [ $(cpkg_in_use ${3}) -eq 0 ]; then
-        case "${2}" in
-          global)
-            log_info "Adding ${3} to the global profile."
-            echo "${CPKG[OS_STAMP]}${3}" >> ${CPKG[GLOBAL]}/.packages
-            cpkg recycle
-            ;;
-          session) 
-            log_info "Adding ${3} to the session profile."
-            echo "${CPKG[OS_STAMP]}${3}" >> ${CPKG[SESSION]}/.packages
-            cpkg recycle
-            ;;
-          *)
-            cpkg ${1} session ${2} 
-            ;;
-        esac
-      fi
-      ;;
+    	if [ $(cpkg_in_use ${3}) -eq 0 ]; then
+        	case "${2}" in
+        		global)
+            		log_info "Adding ${3} to the global profile."
+            		echo "${CPKG[OS_STAMP]}${3}" >> ${CPKG[GLOBAL]}/.packages
+            		cpkg recycle
+            		;;
+          		session) 
+            		log_info "Adding ${3} to the session profile."
+            		echo "${CPKG[OS_STAMP]}${3}" >> ${CPKG[SESSION]}/.packages
+            		cpkg recycle
+            		;;
+          		*)
+            		cpkg ${1} session ${2} 
+            		;;
+        	esac
+      	fi
+      	;;
     drop)
     	case "${2}" in
-       	global)
-					if [ $(cpkg_in_use ${3}) -eq 1 ]; then
-						log_info "Dropping ${3} from the global profile."
-       	 		tempf=$(mktemp /tmp/cpkg.${RND})
-	       		grep -v "${CPKG[OS_STAMP]}${3}" ${CPKG[GLOBAL]}/.packages >${tempf}
-   		   		mv ${tempf} ${CPKG[GLOBAL]}/.packages
-         		cpkg recycle
-					fi
-	       	;;
-       	session) 
-					if [ $(cpkg_in_use ${3}) -eq 1 ]; then
-						log_info "Dropping ${3} from the session profile."
-	       		tempf=$(mktemp /tmp/cpkg.${RND})
-   		   		grep -v "${CPKG[OS_STAMP]}${3}" ${CPKG[SESSION]}/.packages >${tempf}
-	       		mv ${tempf} ${CPKG[SESSION]}/.packages
-         		cpkg recycle
-					fi
-   		   	;;
-				*)
-         	cpkg ${1} session ${2}
-         	;;
-			esac
-      ;;    
+			global)
+				if [ $(cpkg_in_use ${3}) -eq 1 ]; then
+					log_info "Dropping ${3} from the global profile."
+       	 			tempf=$(mktemp /tmp/cpkg.${RND})
+	       			grep -v "${CPKG[OS_STAMP]}${3}" ${CPKG[GLOBAL]}/.packages >${tempf}
+   		   			mv ${tempf} ${CPKG[GLOBAL]}/.packages
+         			cpkg recycle
+				fi
+	       		;;
+       		session) 
+				if [ $(cpkg_in_use ${3}) -eq 1 ]; then
+					log_info "Dropping ${3} from the session profile."
+	       			tempf=$(mktemp /tmp/cpkg.${RND})
+   		   			grep -v "${CPKG[OS_STAMP]}${3}" ${CPKG[SESSION]}/.packages >${tempf}
+	       			mv ${tempf} ${CPKG[SESSION]}/.packages
+         			cpkg recycle
+				fi
+   				;;
+			*)
+				for i in ${CPKG[GLOBAL]}/.packages ${CPKG[SESSION]}/.packages; do
+					tempf=$(mktemp /tmp/cpkg.${RND})
+					grep -v "${CPKG[OS_STAMP]}${3}" ${i} >${tempf}
+					mv ${tempf} ${i}
+				done
+				cpkg recycle
+		 		;;
+		esac
+    	;;    
     log)
       # This needs to show the current sessions logfile
       if [ ! -z "${PAGER}" ]; then
@@ -99,6 +103,70 @@ cpkg() {
         . ${CPKG[ENV_DIR]}/${itm}
       done
       ;;
+	freeze)
+		# Check to see that we have a $2
+		if [ -z "${2}" ]; then
+			log_error "You must provide a package name."
+			# Then check to see if our package exists
+		elif [ ! -d ${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}${2} ]; then
+			log_error "You must provide a valid package name."
+		else 
+			# Set a few things straight
+			s_dir=${PWD}
+			dstamp=$(date +%m%d%y%H%M)
+			log_info "Copying ${2}"
+			# Run into the pkgdir and sync to temp
+			cd ${CPKG[PKG_DIR]}
+			tar -cf- ${CPKG[OS_STAMP]}${2} | tar -C ${CPKG[TMP_DIR]}/ -xf-
+			# Create the tarball
+			log_info "Freezing ${2}"
+			cd ${CPKG[TMP_DIR]}
+			mv ${CPKG[OS_STAMP]}${2} ${2}--${dstamp}
+			tar -czf ${CPKG[FREEZER]}/${2}--${dstamp}.tgz ${2}--${dstamp}/
+			# and clean up after ourselves
+			log_info "Cleaning up"
+			rm -rf ${CPKG[TMP_DIR]}/${2}--${dstamp}
+			cd ${s_dir}
+		fi
+		;;
+	freezer)
+	    echo -e "\033[1;36mThe freezer\033[4;37m\033[1;37m:\033[0m"
+		if [ -z "${2}" ]; then
+			for itm in $(ls ${CPKG[FREEZER]}/); do
+				pkg=$(echo $(basename ${itm})|awk -F'--' '{print $1}')
+				tme=$(echo $(basename ${itm})|awk -F'--' '{print $2}'|awk -F. '{print $1}')
+				printf "\t%-20s %8s\n" ${pkg} ${tme}
+			done
+		else
+			if [ ! -z "$(ls ${CPKG[FREEZER]}|grep ${2})" ]; then
+				for itm in $(ls ${CPKG[FREEZER]}/*${2}*); do
+					pkg=$(echo $(basename ${itm})|awk -F'--' '{print $1}')
+					tme=$(echo $(basename ${itm})|awk -F'--' '{print $2}'|awk -F. '{print $1}')
+					printf "\t%-20s %13s\n" ${pkg} ${tme}
+				done
+			fi
+		fi
+		;;
+	unfreeze)
+		if [ -z "${2}" ] || [ -z "${3}" ]; then
+			log_error "You must supply a package, and a hash."
+		else
+			if [ ! -f ${CPKG[FREEZER]}/${2}--${3}.tgz ]; then
+				log_error "The package and hash you specified are invalid."
+			else
+				log_info "Extracting iceball"
+				tar -C ${CPKG[TMP_DIR]}/ -zxf ${CPKG[FREEZER]}/${2}--${3}.tgz
+				mv ${CPKG[TMP_DIR]}/${2}--${3} ${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}${2}-${3}
+			fi
+		fi
+		;;
+	remove)
+		if [ -d ${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}${2} ] && [ ! -z "${2}" ]; then
+			log_info "Removing ${2}"
+			rm -rf ${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}${2}
+			cpkg recycle
+		fi
+		;;
     *)
       cpkg help 
       ;;
