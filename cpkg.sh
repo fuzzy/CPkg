@@ -202,6 +202,7 @@ fi
 . ${CPKG[LIB_DIR]}/build.sh
 
 # Now lets make sure our utilities are there, and if not, compile them.
+# lndir
 if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
 	if [ ! -e ${CPKG[UTIL_SRC]}/lndir.c ]; then
 		log_error "No lndir.c available, and no lndir. Falling back to the *VERY* slow shell version."
@@ -213,6 +214,19 @@ if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
 	fi
 else
 	CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir
+fi
+
+#cfetch
+if [ ! -e ${CPKG[UTIL_BIN]}/cfetch ]; then
+    if [ ! -e ${CPKG[UTIL_SRC]}/cfetch.c ]; then
+        log_error "No cfetch.c available. Falling back to using system detected download utility."
+    else
+        log_info "Compiling cfetch.c"
+        ${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c
+        CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch
+    fi
+else
+    CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch
 fi
 
 # Ensure this is globally available
