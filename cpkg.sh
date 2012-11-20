@@ -198,9 +198,6 @@ fi
 # And our utility functions
 . ${CPKG[LIB_DIR]}/utils.sh
 
-# And our package building / installation functions
-. ${CPKG[LIB_DIR]}/build.sh
-
 # Now lets make sure our utilities are there, and if not, compile them.
 # lndir
 if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
@@ -229,8 +226,8 @@ else
     CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch
 fi
 
+# builder
+CPKG[CMD_BUILDER]=${CPKG[UTIL_BIN]}/builder.sh
+
 # Ensure this is globally available
 export CPKG
-
-# and build our paths
-cpkg recycle

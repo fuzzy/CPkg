@@ -3,10 +3,11 @@ cpkg() {
   case "${1}" in
     help)
       echo
+      echo -e "\033[1;36mUsage\033[4;37m\033[1;37m:\033[0m"
       echo "cpkg <command> <...>"
       echo
-      echo "Commands:"
-      echo "  list|l [pkg]                           List packages or versions of [pkg]"
+      echo -e "\033[1;36mCommands\033[4;37m\033[1;37m:\033[0m"
+      echo "  list [pkg]                           List packages or versions of [pkg]"
       echo "  use [global|(session)] <pkg>-<ver>   Use <pkg>-<ver>"
       echo "  drop [global|(session)] <pkg>-<ver>  Stop using <pkg>-<ver>"
       echo "  log                                  Shows the logfile for your session."
@@ -15,14 +16,16 @@ cpkg() {
 	  echo "  freeze [pkg]                         Freeze a package at a given state."
 	  echo "  freezer <pkg>                        Show the contents of the freezer, or filtered by <pkg>."
   	  echo "  unfreeze [pkg]                       Unfreeze a package from a given state."
-      echo "  remove [pkg]                         Remove <pkg>"
+      echo "  remove [pkg]                         Remove <pkg>."
+      echo "  search [filter]                      Search through available pkgscripts for [filter]."
+      echo "  install [pkg]                        Install package denoted by [pkg]."
       echo
       ;;
     list)
-      echo "Listing packages:"
-      for itm in $(ls ${CPKG[PKG_DIR]}/|grep "${CPKG[OS_STAMP]}${2}"); do
+		echo -e "\033[1;36mPackages\033[4;37m\033[1;37m:\033[0m"
+    	for itm in $(ls ${CPKG[PKG_DIR]}/|grep "${CPKG[OS_STAMP]}${2}"); do
      		echo -e "[$(cpkg_belongs_to ${itm})] $(echo ${itm}|awk -F`uname -m`-- '{print $2}')"
-      done
+        done
  	    ;;
     use)
     	if [ $(cpkg_in_use ${3}) -eq 0 ]; then
@@ -165,6 +168,29 @@ cpkg() {
 			log_info "Removing ${2}"
 			rm -rf ${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}${2}
 			cpkg recycle
+		fi
+		;;
+	search)
+		echo -e "\033[1;36mPkgscripts\033[4;37m\033[1;37m:\033[0m"
+		if [ ! -z "${2}" ]; then
+			for itm in $(ls ${CPKG[PKGSCRIPT]}/|grep ${2}); do
+				echo "  #) ${itm}" | sed -e 's/\.sh//g'
+			done
+		else
+			for itm in $(ls ${CPKG[PKGSCRIPT]}/); do
+				echo "  #) ${itm}" | sed -e 's/\.sh//g'
+			done				
+		fi
+		;;
+	install)
+		if [ ! -z "${2}" ]; then
+			if [ ! -f ${CPKG[PKGSCRIPT]}/${2}.sh ]; then
+				log_error "You must specify a valid pkgscript."
+			else
+				${CPKG[CMD_BUILDER]} ${2}
+			fi
+		else
+			log_error "You must specify a pkgscript."
 		fi
 		;;
     *)

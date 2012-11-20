@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
             fp = fopen(strdup(basename(argv[index])), "wb");
             curl_easy_setopt(curl, CURLOPT_URL, strdup(argv[index]));
             if (strcmp(getenv("CPKG_VERBOSE"), "1") == 0)
-                printf("\33[32;1m+++\33[0m Fetching ... %s\n", strdup(basename(argv[index])));
+                printf("\33[32;1m+++\33[0m Fetching ... %s\n", strdup(argv[index]));
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
             res = curl_easy_perform(curl);

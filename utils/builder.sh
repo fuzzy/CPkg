@@ -1,3 +1,7 @@
+#!/usr/bin/env zsh
+
+source ~/.cpkg/cpkg.sh
+
 # fetch
 cfetch() {
 	${CPKG[CMD_FETCH]} $*
@@ -22,13 +26,37 @@ cextract() {
 # config
 cconfigure() {
 	log_info "Configuring $(basename ${PWD})"
-	./configure --prefix=${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}$(basename $(pwd)|tr "[:upper:]" "[:lower:]") ${*} >${CPKG[LOG_DIR]}/$(basename ${PWD}).log
+	./configure --prefix=${CPKG[PKG_DIR]}/${CPKG[OS_STAMP]}$(basename $(pwd)|tr "[:upper:]" "[:lower:]") ${*} 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
 }
 
 # install
 cinstall() {
 	log_info "Building $(basename ${PWD})"
-	make >>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
+	make 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
 	log_info "Installing $(basename ${PWD})"
-	make install >>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
+	make install 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
 }
+
+# dependancy (note there is no dependancy resolution at this point, you must order them properly yourself)
+cdepend() {
+	if [ ! -z "${1}" ]; then
+		${CPKG[CMD_BUILDER]} ${1}
+	fi
+}
+
+if [ -z "${1}" ]; then
+	if [ ! -f ${CPKG[PKGSCRIPT]}/${1}.sh ]; then
+		log_error "The specified pkgscript does not exist: ${1}"
+	else
+		source ${CPKG[PKGSCRIPT]}/${1}.sh
+	fi
+else
+	source ${CPKG[PKGSCRIPT]}/${1}.sh
+fi
+
+if [ ! -z "${CPKG_PKG_CLEANUP}" ]; then
+	log_info "Cleaning up."
+	for i in ${CPKG_PKG_CLEANUP}; do
+		rm -rf ${i}
+	done
+fi

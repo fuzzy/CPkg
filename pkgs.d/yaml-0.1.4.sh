@@ -13,4 +13,4 @@ cconfigure # I have no need of arguments for this package
 cinstall
 
 # and cleanup ourselves
-CPKG_PKG_CLEANUP="${CPKG[TMP_DIR]}/yaml-0.1.4*"
+CPKG_PKG_CLEANUP="${CPKG[TMP_DIR]}/yaml-0.1.4 ${CPKG[TMP_DIR]}/yaml-0.1.4.tar.gz"
