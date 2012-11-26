@@ -3,9 +3,9 @@
 #include <unistd.h>
 #ifdef __APPLE__
 #include <libgen.h>
+#include <curl/types.h>
 #endif
 #include <curl/curl.h>
-#include <curl/types.h>
 #include <curl/easy.h>
 #include <string.h>
 #include <time.h>

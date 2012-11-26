@@ -21,9 +21,9 @@ CPKG_SH_PID=$$
 # NOTE: TODO: research this, it may only be valid with FreeBSD's ps
 tmp=`ps aux|grep ${CPKG_SH_PID}|awk '{print $11}'`
 if [ ! -z "$(echo ${tmp}|grep zsh)" ]; then
-  CPKG_SHELL=$(which zsh)
+  CPKG_SHELL=$(which zsh 2>/dev/null)
 elif [ ! -z "$(echo ${tmp}|grep bash)" ]; then
-  CPKG_SHELL=$(which bash)
+  CPKG_SHELL=$(which bash 2>/dev/null)
 fi
 
 # If it exists, make a copy of the session hash 
@@ -114,40 +114,31 @@ CPKG[SHPID]=${CPKG_SH_PID}
 CPKG[SHELL]=${CPKG_SHELL}
 
 # Our toolchain needs setup, so lets do that now
-# Lets get our fetching utility
-if [ ! -z "$(which fetch)" ]; then
-    CPKG[CMD_FETCH]=$(which fetch)
-elif [ ! -z "$(which wget)" ]; then
-    CPKG[CMD_FETCH]=$(which wget)
-elif [ ! -z "$(which curl)" ]; then
-    CPKG[CMD_FETCH]=$(which curl)
-fi
-
 # Lets make sure we get our hashing utility
-if [ ! -z "$(which md5)" ]; then
+if [ ! -z "$(which md5 2>/dev/null)" ]; then
     CPKG[CMD_HASH]=$(which md5)
-elif [ ! -z "$(which md5sum)" ]; then
+elif [ ! -z "$(which md5sum 2>/dev/null)" ]; then
     CPKG[CMD_HASH]=$(which md5sum)
-elif [ ! -z "$(which b64encode)" ]; then
+elif [ ! -z "$(which b64encode 2>/dev/null)" ]; then
     CPKG[CMD_HASH]=$(which b64encode)
-elif [ ! -z "$(which uuencode)" ]; then
+elif [ ! -z "$(which uuencode 2>/dev/null)" ]; then
     CPKG[CMD_HASH]=$(which uuencode)
 fi
 
 # and our compilers
-if [ ! -z "$(which gcc)" ]; then
+if [ ! -z "$(which gcc 2>/dev/null)" ]; then
     CPKG[CMD_CC]=$(which gcc)
-elif [ ! -z "$(which cc)" ]; then
+elif [ ! -z "$(which cc 2>/dev/null)" ]; then
     CPKG[CMD_CC]=$(which cc)
-elif [ ! -z "$(which clang)" ]; then
+elif [ ! -z "$(which clang 2>/dev/null)" ]; then
     CPKG[CMD_CC]=$(which clang)
 fi
 
-if [ ! -z "$(which g++)" ]; then
+if [ ! -z "$(which g++ 2>/dev/null)" ]; then
     CPKG[CMD_CXX]=$(which g++)
-elif [ ! -z "$(which c++)" ]; then
+elif [ ! -z "$(which c++ 2>/dev/null)" ]; then
     CPKG[CMD_CXX]=$(which c++)
-elif [ ! -z "$(which clang++)" ]; then
+elif [ ! -z "$(which clang++ 2>/dev/null)" ]; then
     CPKG[CMD_CXX]=$(which clang++)
 fi
 
@@ -206,8 +197,8 @@ if [ ! -e ${CPKG[UTIL_BIN]}/lndir ]; then
 		CPKG[LNDIR]=slndir
 	else
 		log_info "Compiling lndir.c"
-		${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/lndir ${CPKG[UTIL_SRC]}/lndir.c
-		CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir
+		cmd_compile="${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/lndir ${CPKG[UTIL_SRC]}/lndir.c 2>${CPKG[LOG_DIR]}/lndir-compile.log"
+		(eval ${cmd_compile} && CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir) || (log_error "lndir.c failed to compile."; CPKG[LNDIR]=slndir)
 	fi
 else
 	CPKG[LNDIR]=${CPKG[UTIL_BIN]}/lndir
@@ -219,8 +210,17 @@ if [ ! -e ${CPKG[UTIL_BIN]}/cfetch ]; then
         log_error "No cfetch.c available. Falling back to using system detected download utility."
     else
         log_info "Compiling cfetch.c"
-        ${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c
-        CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch
+        cmd_compile="${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c 2>${CPKG[LOG_DIR]}/cfetch-compile.log"
+        (eval ${cmd_compile} && CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch) || (log_error "cfetch.c failed to compile."; CPKG[CMD_FETCH]="NONE")
+        if [ "${CPKG[CMD_FETCH]}" = "NONE" ]; then
+            if [ ! -z "$(which wget 2>/dev/null)" ]; then
+                CPKG[CMD_FETCH]="wget -q"
+            elif [ ! -z "$(which fetch 2>/dev/null)" ]; then
+                CPKG[CMD_FETCH]="fetch"
+            elif [ ! -z "$(which curl 2>/dev/null)" ]; then
+                CPKG[CMD_FETCH]="curl"
+            fi
+        fi
     fi
 else
     CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch

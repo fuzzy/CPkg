@@ -208,11 +208,19 @@ dodir(char *fn, struct stat *fs, struct stat *ts, int rel, char *bn)
 	}
     
 	if (rel)
+#ifdef __GNUC__
+		strncpy(buf, "../", sizeof(buf));
+#else
 		strlcpy(buf, "../", sizeof(buf));
+#endif
 	else
 		buf[0] = '\0';
+#ifdef __GNUC__
+	strncat(buf, fn, sizeof(buf));
+#else
 	strlcat(buf, fn, sizeof(buf));
-    
+#endif
+
 	if (!(df = opendir(buf))) {
 		warn("%s: Cannot opendir", buf);
 		return(1);
@@ -222,15 +230,23 @@ dodir(char *fn, struct stat *fs, struct stat *ts, int rel, char *bn)
 	*p++ = '/';
 	n_dirs = fs->st_nlink;
 	while ((dp = readdir(df))) {
+#ifdef __GNUC__
+		if (dp->d_reclen == 0 || dp->d_name[dp->d_reclen - 1] == '~' ||
+#else
 		if (dp->d_namlen == 0 || dp->d_name[dp->d_namlen - 1] == '~' ||
-		    strncmp(dp->d_name, ".#", 2) == 0)
+#endif
+			strncmp(dp->d_name, ".#", 2) == 0)
 			continue;
 		for (cur = exceptions; cur != NULL; cur = cur->next) {
 			if (!strcmp(dp->d_name, cur->name))
 				goto next;	/* can't continue */
 		}
+#ifdef __GNUC__
+		strncpy(p, dp->d_name, buf + sizeof(buf) - p);
+#else
 		strlcpy(p, dp->d_name, buf + sizeof(buf) - p);
-        
+#endif
+
 		if (n_dirs > 0) {
 			if (stat(buf, &sb) < 0) {
 				warn("%s", buf);
