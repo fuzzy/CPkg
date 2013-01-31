@@ -115,13 +115,13 @@ CPKG[SHELL]=${CPKG_SHELL}
 
 # Our toolchain needs setup, so lets do that now
 # Lets make sure we get our hashing utility
-if [ ! -z "$(which md5 2>/dev/null)" ]; then
+if [ ! -z "$(which md5 2>/dev/null|grep -v 'no .* .*')" ]; then
     CPKG[CMD_HASH]=$(which md5)
-elif [ ! -z "$(which md5sum 2>/dev/null)" ]; then
+elif [ ! -z "$(which md5sum 2>/dev/null|grep -v 'no .* .*')" ]; then
     CPKG[CMD_HASH]=$(which md5sum)
-elif [ ! -z "$(which b64encode 2>/dev/null)" ]; then
+elif [ ! -z "$(which b64encode 2>/dev/null|grep -v 'no .* .*')" ]; then
     CPKG[CMD_HASH]=$(which b64encode)
-elif [ ! -z "$(which uuencode 2>/dev/null)" ]; then
+elif [ ! -z "$(which uuencode 2>/dev/null|grep -v 'no .* .*')" ]; then
     CPKG[CMD_HASH]=$(which uuencode)
 fi
 

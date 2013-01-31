@@ -14,11 +14,11 @@ cextract() {
 	else
 		log_info "Extracting $(basename ${1})"
 		if [ ! -z "$(file ${1}|grep gzip)" ]; then
-			tar -C ${CPKG[TMP_DIR]}/ -zxf ${1}
+			tar -zxf ${1} -C ${CPKG[TMP_DIR]}/
 		elif [ ! -z "$(file ${1}|grep xz)" ]; then
-			tar -C ${CPKG[TMP_DIR]}/ -zxf ${1}
+			tar -zxf ${1} -C ${CPKG[TMP_DIR]}/
 		elif [ ! -z "$(file ${1}|grep bzip2)" ]; then
-			tar -C ${CPKG[TMP_DIR]}/ -jxf ${1}
+			tar -jxf ${1} -C ${CPKG[TMP_DIR]}/
 		fi
 	fi
 }
