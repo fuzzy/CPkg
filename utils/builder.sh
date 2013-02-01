@@ -4,7 +4,11 @@ source ~/.cpkg/cpkg.sh
 
 # fetch
 cfetch() {
-	${CPKG[CMD_FETCH]} $*
+	if [ ! -z "${*}" ]; then
+		${CPKG[CMD_FETCH]} $*
+	else
+		log_error "You must supply a valid URI."
+	fi
 }
 
 # extract
@@ -13,13 +17,18 @@ cextract() {
 		log_error "You must supply a valid filename."
 	else
 		log_info "Extracting $(basename ${1})"
+		cur_path=${PWD}
+		tmp_path=$(echo ${1}|sed -e "s,$(basename ${1}),,g")
+		cd ${tmp_path}
 		if [ ! -z "$(file ${1}|grep gzip)" ]; then
-			tar -zxf ${1} -C ${CPKG[TMP_DIR]}/
+			tar -zxf ${1}
 		elif [ ! -z "$(file ${1}|grep xz)" ]; then
-			tar -zxf ${1} -C ${CPKG[TMP_DIR]}/
+			tar -zxf ${1}
 		elif [ ! -z "$(file ${1}|grep bzip2)" ]; then
-			tar -jxf ${1} -C ${CPKG[TMP_DIR]}/
+			tar -jxf ${1}
 		fi
+		cd ${cur_path}
+		unset tmp_path && unset cur_path
 	fi
 }
 
@@ -31,8 +40,11 @@ cconfigure() {
 
 # install
 cinstall() {
+	case "$(uname -s)" in
+		SunOS) NCPU=$($(which kstat) -m cpu_info|grep core_id|grep -v pkg|wc -l) ;;
+	esac
 	log_info "Building $(basename ${PWD})"
-	make 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
+	make -j ${NJOBS:-3} 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
 	log_info "Installing $(basename ${PWD})"
 	make install 2>${CPKG[LOG_DIR]}/$(basename ${PWD})-error.log 1>${CPKG[LOG_DIR]}/$(basename ${PWD}).log
 }
@@ -48,15 +60,47 @@ if [ -z "${1}" ]; then
 	if [ ! -f ${CPKG[PKGSCRIPT]}/${1}.sh ]; then
 		log_error "The specified pkgscript does not exist: ${1}"
 	else
+		START_DIR=${PWD}
 		source ${CPKG[PKGSCRIPT]}/${1}.sh
+		cd ${START_DIR} && unset START_DIR
 	fi
 else
+	START_DIR=${PWD}
 	source ${CPKG[PKGSCRIPT]}/${1}.sh
+	cd ${START_DIR} && unset START_DIR
 fi
 
-if [ ! -z "${CPKG_PKG_CLEANUP}" ]; then
-	log_info "Cleaning up."
-	for i in ${CPKG_PKG_CLEANUP}; do
-		rm -rf ${i}
+# Let us begin
+START_DIR=${PWD} && cd ${CPKG[TMP_DIR]}
+
+# Fetch our target, cycling through the mirrors till one works or we die
+FLAG=1
+while [ ${FLAG} -ne 0 ]; do
+	for uri in ${PKG[MIRRORS]}; do
+		cfetch ${uri} && FLAG=0 && break
 	done
-fi
+	if [ ${FLAG} -ne 0 ]; then
+		log_error "Mirrors exhausted."
+		FLAG=0
+	fi
+done
+
+# Extract our target
+cextract ${CPKG[TMP_DIR]}/${PKG[FNAME]}
+
+# Get into our source dir
+cd ${PKG[NAME]}
+
+# Configure
+cconfigure ${PKG[CONFIGURE]}
+
+# Make install
+cinstall ${CPKG[TMP_DIR]}/${PKG[FNAME]}
+
+# Cleanup after ourselves
+cd ${CPKG[TMP_DIR]}
+rm -rf ${PKG[FNAME]} ${PKG[NAME]}
+
+# And go back to where we started from
+cd ${START_DIR}
+

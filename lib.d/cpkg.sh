@@ -24,7 +24,7 @@ cpkg() {
     list)
 		echo -e "\033[1;36mPackages\033[4;37m\033[1;37m:\033[0m"
     	for itm in $(ls ${CPKG[PKG_DIR]}/|grep "${CPKG[OS_STAMP]}${2}"); do
-     		echo -e "[$(cpkg_belongs_to ${itm})] $(echo ${itm}|awk -F`uname -m`-- '{print $2}')"
+		echo -e "[$(cpkg_belongs_to ${itm})] $(echo ${itm}|gawk -F'__' '{print $3}')"
         done
  	    ;;
     use)

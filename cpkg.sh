@@ -143,7 +143,7 @@ elif [ ! -z "$(which clang++ 2>/dev/null)" ]; then
 fi
 
 # Lets set our OS stamp
-CPKG[OS_STAMP]="$(uname -s)--$(uname -m)--"
+CPKG[OS_STAMP]="$(uname -s)__$(uname -m)__"
 
 # Now lets pull in our config file, and update all defaults
 if [ -f ${CPKG[CONF_DIR]}/cpkg.cfg ]; then
