@@ -50,10 +50,34 @@ cinstall() {
 }
 
 # dependancy (note there is no dependancy resolution at this point, you must order them properly yourself)
+# Calling convention is as follows:
+# cdepend <pkg> <version>
 cdepend() {
-	if [ ! -z "${1}" ]; then
-		${CPKG[CMD_BUILDER]} ${1}
-	fi
+	# If we don't have 2 arguments, then we default to a compile time dependency
+	case "${1}" in
+		compile) 
+			if [ ! -z "${2}" ]; then
+				# Good, our dependancy exists, yay!
+				# Now first things first:
+				# Find out if our dependancy is a valid pkg build script
+				a=1
+					# if yes find out if it is already installed
+					a=1
+					# if not, install it
+					a=1
+				# If not find out if it is installed in the system library paths
+				a=1
+				# if not, fuck off, bad dependancy
+			fi
+			;;
+		install) POST_DEPENDS="${2} ${POST_DEPENDS}" ;;
+		*) cdepend compile ${1} ;;
+	esac
+
+	# Honestly this is a disgrace
+	#if [ ! -z "${1}" ]; then
+	#	${CPKG[CMD_BUILDER]} ${1}
+	#fi
 }
 
 if [ -z "${1}" ]; then
@@ -81,7 +105,7 @@ while [ ${FLAG} -ne 0 ]; do
 	done
 	if [ ${FLAG} -ne 0 ]; then
 		log_error "Mirrors exhausted."
-		FLAG=0
+		exit
 	fi
 done
 
