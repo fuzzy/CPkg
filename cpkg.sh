@@ -210,7 +210,7 @@ if [ ! -e ${CPKG[UTIL_BIN]}/cfetch ]; then
         log_error "No cfetch.c available. Falling back to using system detected download utility."
     else
         log_info "Compiling cfetch.c"
-        cmd_compile="${CPKG[CMD_CC]} -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c 2>${CPKG[LOG_DIR]}/cfetch-compile.log"
+        cmd_compile="${CPKG[CMD_CC]} -I/usr/local/include -L/usr/local/lib -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c 2>${CPKG[LOG_DIR]}/cfetch-compile.log"
         (eval ${cmd_compile} && CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch) || (log_error "cfetch.c failed to compile."; CPKG[CMD_FETCH]="NONE")
         if [ "${CPKG[CMD_FETCH]}" = "NONE" ]; then
             if [ ! -z "$(which wget 2>/dev/null)" ]; then
