@@ -45,20 +45,16 @@ void *noop;
  */
 void info(char *str) { 
   if (getenv("CPKG_VERBOSE") != NULL && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
-    printf("\33[32;1m+++\33[0m %s\n", str);
-  } else {
-    printf("%s\n", str);
+    printf("\33[32;1m+++\33[0m %s", str);
+    fflush(stdout);
   }
-  fflush(stdout);
 }
 
 void error(char *str) { 
   if (getenv("CPKG_VERBOSE") != NULL && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
-    printf("\33[31;1m***\33[0m %s\n", str);
-  } else {
-    printf("%s\n", str);
+    printf("\33[31;1m***\33[0m %s", str);
+    fflush(stdout);
   }
-  fflush(stdout);
 }
 
 void prog(char *str) { 
@@ -136,7 +132,7 @@ int progress_data(void *clientp, double dltotal, double dlnow, double ultotal, d
   char buffer[1024];
   
   if (dltotal > 1024 && dlnow > 0) {
-    if (flag == 1) {
+    if (flag == 1 && getenv("CPKG_VERBOSE") != NULL && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
       printf("%s\n", format_size(dltotal));
       flag = 0;
     }
@@ -171,8 +167,8 @@ void process_uri(char *uri) {
     fp = fopen(strdup(basename(strdup(uri))), "wb");
     
     /* status output */
-    sprintf(buffer, "Fetching ... %s ... ", strdup(basename(uri))); /* let everyone know */
-    prog(buffer);
+    sprintf(buffer, "Fetching ... %s ... ", strdup(basename(uri)));
+    info(buffer); 
     
     /* CURL options */
     curl_easy_setopt(curl, CURLOPT_URL, strdup(uri));
