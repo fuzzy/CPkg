@@ -33,6 +33,7 @@
  */
 int dl_bytes = 0;
 int flag = 0;
+char prog_line[20];
 
 /* Time tracking */
 time_t start_t, end_t;
@@ -59,7 +60,7 @@ void error(char *str) {
 
 void prog(char *str) { 
   if (getenv("CPKG_VERBOSE") != NULL && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
-    printf("\r\33[32;1m+++\33[0m %s", str);
+    printf("\r\33[32;1m>\33[0m %s", str);
   } else {
     printf("\r%s", str);
   }
@@ -75,13 +76,13 @@ format_size(unsigned long s) {
   char buffer[2048];
   
   if (s < b) {
-    sprintf(buffer, "%d bytes", s);
+    sprintf(buffer, "%dB", s);
   } 
   if ( s > 1024 && s < ( 1024*1024 ) ) {
-    sprintf(buffer, "%d KBytes", (s / 1024));
+    sprintf(buffer, "%dKB", (s / 1024));
   } 
   if (s > (b*b) && s < ((b*b)*b)) {
-    sprintf(buffer, "%.02f MBytes", (((float)s / (float)b) / (float)b));
+    sprintf(buffer, "%.02fMB", (((float)s / (float)b) / (float)b));
   } 
   /* printf("\r\33[32;1m+++\33[0m %s", buffer); */
   return strdup(buffer);
@@ -132,14 +133,15 @@ int progress_data(void *clientp, double dltotal, double dlnow, double ultotal, d
   char buffer[1024];
   
   if (dltotal > 1024 && dlnow > 0) {
-    if (flag == 1 && getenv("CPKG_VERBOSE") != NULL && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
-      printf("%s\n", format_size(dltotal));
+    if (flag == 1 && strcmp(getenv("CPKG_VERBOSE"), "1") == 0) {
+	  strcat(prog_line, format_size(dltotal));
+      /* printf("%s\n", format_size(dltotal)); */
       flag = 0;
     }
     
     sprintf(buffer, 
-	    "(%3d%%) [%-11s] %s @ %s/sec", 
-	    (int)(((float)dlnow / (float)dltotal) * (float)100), 
+	    "%s (%3d%%) [%-11s] %s @ %s/sec", 
+	    prog_line, (int)(((float)dlnow / (float)dltotal) * (float)100), 
 	    gauge((int)(((float)dlnow / (float)dltotal) * (float)100)), 
 	    format_size(dlnow), 
 	    format_size((dlnow / (time(&end_t) - start_t))));
@@ -157,6 +159,7 @@ int progress_data(void *clientp, double dltotal, double dlnow, double ultotal, d
  */
 void process_uri(char *uri) { 
   char buffer[1024];
+  char fn_buff[7];
   CURL *curl;
   FILE *fp;
   CURLcode res;
@@ -166,9 +169,15 @@ void process_uri(char *uri) {
   if (curl) {
     fp = fopen(strdup(basename(strdup(uri))), "wb");
     
+
     /* status output */
-    sprintf(buffer, "Fetching ... %s ... ", strdup(basename(uri)));
-    info(buffer); 
+	if (strlen(strdup(basename(uri))) > 20) {
+		sprintf(buffer, "%s...: ", strncat(fn_buff, strdup(basename(uri)), 17));
+  	} else {
+	    sprintf(buffer, "%s: ", strdup(basename(uri)));
+	}
+	/* prog(buffer); let everyone know */
+	strcat(prog_line, buffer);
     
     /* CURL options */
     curl_easy_setopt(curl, CURLOPT_URL, strdup(uri));

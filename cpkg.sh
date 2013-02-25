@@ -144,6 +144,11 @@ fi
 
 # Lets set our OS stamp
 CPKG[OS_STAMP]="$(uname -s)__$(uname -m)__"
+# And some other OS dependent stuff
+case "$(uname -s)" in
+  FreeBSD|OpenBSD) CPKG[OS_FLAGS]="-I/usr/local/include -L/usr/local/lib" ;;
+  NetBSD) CPKG[OS_FLAGS]="-I/usr/pkg/include -L/usr/pkg/lib" ;;
+esac
 
 # Now lets pull in our config file, and update all defaults
 if [ -f ${CPKG[CONF_DIR]}/cpkg.cfg ]; then
@@ -210,7 +215,7 @@ if [ ! -e ${CPKG[UTIL_BIN]}/cfetch ]; then
         log_error "No cfetch.c available. Falling back to using system detected download utility."
     else
         log_info "Compiling cfetch.c"
-        cmd_compile="${CPKG[CMD_CC]} -I/usr/local/include -L/usr/local/lib -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c 2>${CPKG[LOG_DIR]}/cfetch-compile.log"
+        cmd_compile="${CPKG[CMD_CC]} ${CPKG[OS_FLAGS]} -o ${CPKG[UTIL_BIN]}/cfetch -lcurl ${CPKG[UTIL_SRC]}/cfetch.c 2>${CPKG[LOG_DIR]}/cfetch-compile.log"
         (eval ${cmd_compile} && CPKG[CMD_FETCH]=${CPKG[UTIL_BIN]}/cfetch) || (log_error "cfetch.c failed to compile."; CPKG[CMD_FETCH]="NONE")
         if [ "${CPKG[CMD_FETCH]}" = "NONE" ]; then
             if [ ! -z "$(which wget 2>/dev/null)" ]; then

@@ -341,7 +341,7 @@ dodir(char *fn, struct stat *fs, struct stat *ts, int rel, char *bn)
     next:
         ;
 		if (strcmp(getenv("CPKG_VERBOSE"), "1") == 0)
-			fprintf(stderr, "\33[32;1m+++\33[0m %-35s: %7d\r", bn, (dir_count+lnk_count));
+			fprintf(stderr, "\33[32;1m>\33[0m %-35s: %7d\r", bn, (dir_count+lnk_count));
 	}
     
 	closedir(df);
